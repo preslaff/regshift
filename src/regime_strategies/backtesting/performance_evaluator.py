@@ -234,30 +234,62 @@ class PerformanceEvaluator:
         return analysis
     
     def _compare_to_benchmark(self, result: BacktestResult) -> Dict[str, Any]:
-        """Compare strategy performance to benchmark."""
-        if result.benchmark_returns is None or result.benchmark_returns.empty:
-            return {'benchmark_available': False}
-        
-        comparison = {'benchmark_available': True}
-        
-        # Basic comparison metrics
+        """Compare strategy performance to benchmarks."""
+        comparison = {}
         strategy_metrics = calculate_metrics(result.portfolio_returns)
-        benchmark_metrics = calculate_metrics(result.benchmark_returns)
-        
         comparison['strategy_metrics'] = strategy_metrics
-        comparison['benchmark_metrics'] = benchmark_metrics
         
-        # Outperformance metrics
-        excess_returns = result.portfolio_returns - result.benchmark_returns
-        comparison['excess_return_metrics'] = calculate_metrics(excess_returns)
+        # Compare to external benchmark (e.g., SPY)
+        if result.benchmark_returns is not None and not result.benchmark_returns.empty:
+            benchmark_metrics = calculate_metrics(result.benchmark_returns)
+            excess_returns = result.portfolio_returns - result.benchmark_returns
+            outperformance_periods = (result.portfolio_returns > result.benchmark_returns).sum()
+            total_periods = len(result.portfolio_returns)
+            
+            comparison['external_benchmark'] = {
+                'available': True,
+                'metrics': benchmark_metrics,
+                'excess_return_metrics': calculate_metrics(excess_returns),
+                'outperformance_rate': outperformance_periods / total_periods if total_periods > 0 else 0,
+                'tracking_error': excess_returns.std() * np.sqrt(252)
+            }
+        else:
+            comparison['external_benchmark'] = {'available': False}
         
-        # Win rate against benchmark
-        outperformance_periods = (result.portfolio_returns > result.benchmark_returns).sum()
-        total_periods = len(result.portfolio_returns)
-        comparison['outperformance_rate'] = outperformance_periods / total_periods if total_periods > 0 else 0
+        # Compare to static MPT benchmark (always available)
+        if result.static_mpt_returns is not None and not result.static_mpt_returns.empty:
+            static_mpt_metrics = calculate_metrics(result.static_mpt_returns)
+            excess_returns_mpt = result.portfolio_returns - result.static_mpt_returns
+            outperformance_periods_mpt = (result.portfolio_returns > result.static_mpt_returns).sum()
+            total_periods_mpt = len(result.portfolio_returns)
+            
+            comparison['static_mpt_benchmark'] = {
+                'available': True,
+                'metrics': static_mpt_metrics,
+                'excess_return_metrics': calculate_metrics(excess_returns_mpt),
+                'outperformance_rate': outperformance_periods_mpt / total_periods_mpt if total_periods_mpt > 0 else 0,
+                'tracking_error': excess_returns_mpt.std() * np.sqrt(252),
+                'regime_advantage': {
+                    'total_return_diff': strategy_metrics['total_return'] - static_mpt_metrics['total_return'],
+                    'sharpe_diff': strategy_metrics['sharpe_ratio'] - static_mpt_metrics['sharpe_ratio'],
+                    'max_drawdown_diff': strategy_metrics['maximum_drawdown'] - static_mpt_metrics['maximum_drawdown']
+                }
+            }
+        else:
+            comparison['static_mpt_benchmark'] = {'available': False}
         
-        # Tracking error
-        comparison['tracking_error'] = excess_returns.std() * np.sqrt(252)
+        # Legacy support for existing code
+        benchmark_comparison = comparison.get('external_benchmark', {})
+        if benchmark_comparison.get('available', False):
+            comparison.update({
+                'benchmark_available': True,
+                'benchmark_metrics': benchmark_comparison['metrics'],
+                'excess_return_metrics': benchmark_comparison['excess_return_metrics'],
+                'outperformance_rate': benchmark_comparison['outperformance_rate'],
+                'tracking_error': benchmark_comparison['tracking_error']
+            })
+        else:
+            comparison['benchmark_available'] = False
         
         # Information ratio
         if comparison['tracking_error'] > 0:

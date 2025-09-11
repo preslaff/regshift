@@ -124,7 +124,10 @@ class RegimeStrategyApp:
                 self.logger.info(f"Results saved to {results_path}")
                 self.logger.info(f"Evaluation saved to {eval_path}")
             
-            # Return summary
+            # Return summary including benchmark comparison
+            benchmark_comparison = evaluation.get('benchmark_comparison', {})
+            static_mpt = benchmark_comparison.get('static_mpt_benchmark', {})
+            
             summary = {
                 'strategy_name': strategy_name,
                 'backtest_period': f"{start_date} to {end_date}",
@@ -133,7 +136,11 @@ class RegimeStrategyApp:
                 'sharpe_ratio': evaluation['basic_metrics'].get('sharpe_ratio', 0),
                 'maximum_drawdown': evaluation['risk_metrics'].get('maximum_drawdown', 0),
                 'regime_prediction_accuracy': evaluation['regime_analysis'].get('regime_prediction_accuracy', 0),
-                'overall_rating': evaluation['overall_assessment'].get('rating', 'Unknown')
+                'overall_rating': evaluation['overall_assessment'].get('rating', 'Unknown'),
+                # Static MPT benchmark comparison
+                'static_mpt_outperformance': static_mpt.get('outperformance_rate', 0),
+                'regime_advantage_return': static_mpt.get('regime_advantage', {}).get('total_return_diff', 0),
+                'regime_advantage_sharpe': static_mpt.get('regime_advantage', {}).get('sharpe_diff', 0)
             }
             
             self.logger.info(f"Backtest completed successfully: {summary}")

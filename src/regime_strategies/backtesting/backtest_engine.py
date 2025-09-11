@@ -29,6 +29,7 @@ class BacktestResult:
     portfolio_returns: pd.Series
     portfolio_weights: pd.DataFrame
     benchmark_returns: Optional[pd.Series] = None
+    static_mpt_returns: Optional[pd.Series] = None
     
     # Regime data
     predicted_regimes: pd.Series = field(default_factory=pd.Series)
@@ -176,6 +177,9 @@ class BacktestEngine:
         self.benchmark_symbol = benchmark
         self.backtest_start = start_date
         self.backtest_end = end_date
+        
+        # Calculate static MPT benchmark weights (calculated once at start)
+        self.static_mpt_weights = self._calculate_static_mpt_weights()
         
         self.logger.info(f"Loaded data: {len(self.market_data)} market observations, "
                         f"{len(self.economic_data)} economic observations")
@@ -332,11 +336,15 @@ class BacktestEngine:
         if self.benchmark_data is not None:
             benchmark_returns = self._align_benchmark_returns(rebalance_dates)
         
+        # Calculate static MPT benchmark returns
+        static_mpt_returns = self._calculate_static_mpt_returns(rebalance_dates)
+        
         # Create backtest result
         result = BacktestResult(
             portfolio_returns=portfolio_returns,
             portfolio_weights=portfolio_weights_df,
             benchmark_returns=benchmark_returns,
+            static_mpt_returns=static_mpt_returns,
             predicted_regimes=predicted_regimes_series,
             actual_regimes=actual_regimes_series,
             turnover=turnover_series,
@@ -507,6 +515,69 @@ class BacktestEngine:
                 benchmark_returns.append(0.0)
         
         return pd.Series(benchmark_returns, index=rebalance_dates)
+    
+    def _calculate_static_mpt_weights(self) -> np.ndarray:
+        """
+        Calculate static MPT portfolio weights using all historical data.
+        This creates a benchmark that uses the same optimization method but 
+        with static weights calculated once at the beginning.
+        """
+        try:
+            # Use all available historical data for static calculation
+            asset_returns = self.market_data[self.assets]
+            
+            # Calculate unconditional expected returns and covariance
+            mu = asset_returns.mean().values * 252  # Annualized
+            sigma = asset_returns.cov().values * 252  # Annualized
+            
+            # Use the same optimization method as the dynamic strategy
+            result = self.optimizer.optimize(
+                mu=mu, 
+                sigma=sigma, 
+                method=self.config.optimization.default_method
+            )
+            
+            if result and result.success:
+                self.logger.info(f"Static MPT benchmark weights calculated: "
+                               f"Return={result.expected_return:.3f}, "
+                               f"Vol={result.volatility:.3f}, "
+                               f"Sharpe={result.sharpe_ratio:.3f}")
+                return result.weights
+            else:
+                # Fallback to equal weights
+                self.logger.warning("Static MPT optimization failed, using equal weights")
+                return np.ones(len(self.assets)) / len(self.assets)
+                
+        except Exception as e:
+            self.logger.error(f"Error calculating static MPT weights: {e}")
+            # Fallback to equal weights
+            return np.ones(len(self.assets)) / len(self.assets)
+    
+    def _calculate_static_mpt_returns(self, rebalance_dates: List[datetime]) -> pd.Series:
+        """Calculate returns for static MPT benchmark portfolio."""
+        static_returns = []
+        
+        for i, rebalance_date in enumerate(rebalance_dates):
+            try:
+                if i == 0:
+                    # No return for first period
+                    static_returns.append(0.0)
+                    continue
+                
+                # Calculate period return using static weights
+                period_start = rebalance_dates[i-1]
+                period_end = rebalance_date
+                
+                period_return = self._calculate_period_returns(
+                    period_start, period_end, self.static_mpt_weights
+                )
+                static_returns.append(period_return)
+                
+            except Exception as e:
+                self.logger.error(f"Error calculating static MPT return: {e}")
+                static_returns.append(0.0)
+        
+        return pd.Series(static_returns, index=rebalance_dates)
     
     def _calculate_final_metrics(self, result: BacktestResult):
         """Calculate final performance metrics."""

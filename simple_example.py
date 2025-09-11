@@ -36,6 +36,13 @@ def main():
     print(f"Regime Prediction Accuracy: {result['regime_prediction_accuracy']:.1%}")
     print(f"Overall Rating: {result['overall_rating']}")
     
+    # Static MPT Benchmark Comparison
+    print("\nBenchmark Comparison:")
+    print("-" * 40)
+    print(f"Static MPT Outperformance Rate: {result.get('static_mpt_outperformance', 0):.1%}")
+    print(f"Regime Advantage (Return): {result.get('regime_advantage_return', 0):+.2%}")
+    print(f"Regime Advantage (Sharpe): {result.get('regime_advantage_sharpe', 0):+.3f}")
+    
     print("\nDemo completed successfully!")
     print("""
 System Status:
