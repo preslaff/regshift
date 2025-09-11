@@ -193,8 +193,9 @@ class BacktestEngine:
         # Get historical regimes
         self.historical_regimes = self.regime_identifier.get_regimes()
         
-        # Fit CMA calculator
-        aligned_returns, aligned_regimes = self.market_data.align(
+        # Fit CMA calculator (only use the requested assets, not auxiliary data like VIX)
+        asset_returns = self.market_data[self.assets]  # Filter to only requested assets
+        aligned_returns, aligned_regimes = asset_returns.align(
             self.historical_regimes, join='inner', axis=0
         )
         
@@ -383,10 +384,10 @@ class BacktestEngine:
                                  weights: np.ndarray) -> float:
         """Calculate portfolio return for a specific period."""
         try:
-            # Get market returns for the period
+            # Get market returns for the period (only for the requested assets)
             period_mask = ((self.market_data.index > start_date) & 
                           (self.market_data.index <= end_date))
-            period_returns = self.market_data[period_mask]
+            period_returns = self.market_data[period_mask][self.assets]
             
             if period_returns.empty:
                 return 0.0
