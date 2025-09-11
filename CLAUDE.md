@@ -99,6 +99,159 @@ The system follows a **5-stage modular architecture**:
 - Use time-series appropriate cross-validation (e.g., `TimeSeriesSplit`)
 - Focus on relative asset performance order within regimes
 
+## Git Workflow and Version Control
+
+### Repository Structure
+This repository follows Git best practices with comprehensive `.gitignore` for Python financial projects:
+
+```
+.gitignore includes:
+- Python artifacts (__pycache__, *.pyc, etc.)
+- Virtual environments (.venv, venv/)
+- Data files (*.csv, *.h5, *.parquet)
+- API keys and secrets (.env, secrets.json)
+- IDE files (.vscode/, .idea/)
+- Large result files (backtest_results/, simulation_outputs/)
+- Financial data cache (market_data_cache/)
+```
+
+### Branching Strategy
+- **main/master**: Production-ready code only
+- **develop**: Integration branch for features
+- **feature/***: Individual feature development
+- **hotfix/***: Critical production fixes
+
+### Commit Message Guidelines
+Follow conventional commit format:
+```
+type(scope): brief description
+
+Detailed explanation of changes made, why they were necessary,
+and any important implementation details.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**Common types**: 
+- `feat`: New feature implementation
+- `fix`: Bug fixes
+- `refactor`: Code restructuring without behavior changes
+- `perf`: Performance improvements
+- `test`: Adding or updating tests
+- `docs`: Documentation updates
+- `chore`: Maintenance tasks
+
+### Development Workflow
+1. **Start new feature**:
+   ```bash
+   git checkout -b feature/regime-forecasting-improvements
+   ```
+
+2. **Regular commits during development**:
+   ```bash
+   git add .
+   git commit -m "feat(forecasting): add XGBoost ensemble model
+   
+   - Implement XGBoost classifier for regime prediction
+   - Add hyperparameter tuning with grid search
+   - Improve prediction accuracy by 3.2%
+   
+   🤖 Generated with [Claude Code](https://claude.ai/code)
+   
+   Co-Authored-By: Claude <noreply@anthropic.com>"
+   ```
+
+3. **Before merging**:
+   ```bash
+   # Ensure tests pass
+   python -m pytest tests/
+   
+   # Run linting
+   python -m flake8 src/
+   
+   # Update documentation if needed
+   git add .
+   git commit -m "docs: update README with XGBoost requirements"
+   ```
+
+4. **Merge to develop**:
+   ```bash
+   git checkout develop
+   git merge feature/regime-forecasting-improvements
+   git branch -d feature/regime-forecasting-improvements
+   ```
+
+### Important Git Practices for Financial Code
+
+#### 1. Never Commit Sensitive Data
+```bash
+# Check what's being committed
+git diff --cached
+
+# Items to NEVER commit:
+- API keys (FRED_API_KEY, etc.)
+- Real trading credentials  
+- Proprietary financial data
+- Personal account information
+- Large data files (>100MB)
+```
+
+#### 2. Point-in-Time Data Integrity
+- Commit data snapshots with timestamps
+- Tag releases with backtest periods: `git tag -a v1.0-backtest-2020-2023`
+- Document data sources and versions in commit messages
+
+#### 3. Reproducible Research
+```bash
+# Tag major backtests
+git tag -a backtest-2024-q1 -m "Backtest results for Q1 2024 regime strategy"
+
+# Include environment info in commits
+pip freeze > requirements.txt
+git add requirements.txt
+git commit -m "chore: update dependencies for reproducible environment"
+```
+
+#### 4. Code Review Checklist
+Before merging any financial modeling code:
+- [ ] No look-ahead bias in backtesting logic
+- [ ] Point-in-time data handling verified
+- [ ] Performance metrics properly calculated
+- [ ] Risk management constraints implemented
+- [ ] Documentation updated for strategy changes
+- [ ] Tests cover edge cases (market crashes, missing data)
+
+### Remote Repository Management
+When working with GitHub/GitLab:
+
+1. **Push feature branches**:
+   ```bash
+   git push -u origin feature/portfolio-optimization
+   ```
+
+2. **Create pull requests** with detailed descriptions:
+   - What financial problem does this solve?
+   - What models/strategies are implemented?
+   - Backtest performance summary
+   - Risk considerations
+   - Breaking changes (if any)
+
+3. **Protect main branch** with required reviews for financial code
+
+### Emergency Procedures
+For critical fixes in production strategies:
+```bash
+# Hotfix workflow
+git checkout -b hotfix/sharpe-calculation-fix main
+# Make critical fix
+git commit -m "fix(optimization): correct Sharpe ratio calculation"
+git checkout main
+git merge hotfix/sharpe-calculation-fix
+git tag -a v1.0.1-hotfix -m "Fix critical Sharpe ratio bug"
+```
+
 ## Common Development Pitfalls to Avoid
 
 1. **Look-Ahead Bias**: Using future information in historical decisions
@@ -106,3 +259,5 @@ The system follows a **5-stage modular architecture**:
 3. **Regime Persistence**: Underestimating the "stickiness" of market regimes
 4. **Static Assumptions**: Falling back to traditional MPT approaches
 5. **Complexity First**: Starting with complex models before establishing baselines
+6. **Version Control Neglect**: Not committing data handling logic or model parameters
+7. **Credential Exposure**: Accidentally committing API keys or sensitive financial data
