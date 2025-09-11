@@ -201,6 +201,9 @@ class RegimeForecaster:
         if len(X) == 0:
             raise ValueError("No valid training data available")
         
+        # Store training feature names for consistency in prediction
+        self.training_feature_names_ = list(features.columns)
+        
         # Split data for validation
         split_idx = int(len(X) * (1 - validation_split))
         X_train, X_val = X[:split_idx], X[split_idx:]
@@ -470,6 +473,27 @@ class RegimeForecaster:
         """
         # Use the most recent complete feature vector
         X = features.dropna().tail(1).values
+        
+        # Ensure feature consistency with training data
+        if hasattr(self, 'training_feature_names_'):
+            # Match the feature columns from training
+            if set(features.columns) != set(self.training_feature_names_):
+                self.logger.warning(f"Feature mismatch detected. Training: {len(self.training_feature_names_)}, Prediction: {len(features.columns)}")
+                
+                # Create a DataFrame with the expected features, filling missing ones with 0
+                aligned_features = pd.DataFrame(0.0, index=features.index, columns=self.training_feature_names_)
+                
+                # Fill available features
+                for col in features.columns:
+                    if col in self.training_feature_names_:
+                        aligned_features[col] = features[col]
+                
+                # Use most recent complete row
+                X = aligned_features.dropna().tail(1).values
+                
+                if len(X) == 0:
+                    # If no complete rows, use forward fill for the most recent row
+                    X = aligned_features.ffill().tail(1).values
         
         return X
     
