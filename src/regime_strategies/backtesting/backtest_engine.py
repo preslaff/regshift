@@ -537,10 +537,10 @@ class BacktestEngine:
                 method=self.config.optimization.default_method
             )
             
-            if result and result.success:
+            if result and result.optimization_status == "optimal":
                 self.logger.info(f"Static MPT benchmark weights calculated: "
                                f"Return={result.expected_return:.3f}, "
-                               f"Vol={result.volatility:.3f}, "
+                               f"Vol={result.expected_volatility:.3f}, "
                                f"Sharpe={result.sharpe_ratio:.3f}")
                 return result.weights
             else:

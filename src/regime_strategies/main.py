@@ -133,6 +133,7 @@ class RegimeStrategyApp:
                 'backtest_period': f"{start_date} to {end_date}",
                 'total_return': evaluation['basic_metrics'].get('total_return', 0),
                 'annualized_return': evaluation['basic_metrics'].get('annualized_return', 0),
+                'annualized_volatility': evaluation['basic_metrics'].get('annualized_volatility', 0),
                 'sharpe_ratio': evaluation['basic_metrics'].get('sharpe_ratio', 0),
                 'maximum_drawdown': evaluation['risk_metrics'].get('maximum_drawdown', 0),
                 'regime_prediction_accuracy': evaluation['regime_analysis'].get('regime_prediction_accuracy', 0),

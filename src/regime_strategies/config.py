@@ -8,6 +8,13 @@ from datetime import datetime, date
 import os
 from pathlib import Path
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not available, environment variables must be set manually
+
 
 class DataConfig(BaseModel):
     """Configuration for data sources and parameters."""
