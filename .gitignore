@@ -220,3 +220,5 @@ api_keys.txt
 # Large result files
 backtest_results/
 simulation_outputs/
+CLAUDE.md
+NotebookLM Mind Map.png

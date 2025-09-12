@@ -125,10 +125,29 @@ class MaxSharpeOptimizer:
         problem = cp.Problem(objective, constraints)
         
         try:
-            problem.solve(
-                solver=self.config.optimization.solver,
-                max_iters=self.config.optimization.max_iters
-            )
+            # Try different solvers in order of preference
+            solvers_to_try = [self.config.optimization.solver, "OSQP", "SCS", "CLARABEL"]
+            problem_solved = False
+            
+            for solver in solvers_to_try:
+                try:
+                    if solver in cp.installed_solvers():
+                        problem.solve(
+                            solver=solver,
+                            max_iters=self.config.optimization.max_iters
+                        )
+                        if problem.status == cp.OPTIMAL:
+                            problem_solved = True
+                            break
+                        else:
+                            self.logger.debug(f"Solver {solver} status: {problem.status}")
+                except Exception as solver_error:
+                    self.logger.debug(f"Solver {solver} failed: {solver_error}")
+                    continue
+            
+            if not problem_solved:
+                self.logger.warning(f"All CVXPY solvers failed, falling back to scipy")
+                return self._optimize_scipy(mu, sigma, risk_free_rate)
             
             if problem.status == cp.OPTIMAL:
                 weights = w.value
@@ -304,7 +323,26 @@ class MinimumVarianceOptimizer:
         problem = cp.Problem(objective, constraints)
         
         try:
-            problem.solve(solver=self.config.optimization.solver)
+            # Try different solvers in order of preference
+            solvers_to_try = [self.config.optimization.solver, "OSQP", "SCS", "CLARABEL"]
+            problem_solved = False
+            
+            for solver in solvers_to_try:
+                try:
+                    if solver in cp.installed_solvers():
+                        problem.solve(solver=solver)
+                        if problem.status == cp.OPTIMAL:
+                            problem_solved = True
+                            break
+                        else:
+                            self.logger.debug(f"Solver {solver} status: {problem.status}")
+                except Exception as solver_error:
+                    self.logger.debug(f"Solver {solver} failed: {solver_error}")
+                    continue
+            
+            if not problem_solved:
+                self.logger.warning(f"All CVXPY solvers failed, falling back to scipy")
+                return self._optimize_scipy(mu, sigma)
             
             if problem.status == cp.OPTIMAL:
                 weights = w.value

@@ -264,7 +264,7 @@ class EconomicDataProvider:
         """Generate synthetic CPI data for testing purposes."""
         self.logger.warning("Generating synthetic CPI data - for testing only!")
         
-        date_range = pd.date_range(start=start_date, end=end_date, freq='M')
+        date_range = pd.date_range(start=start_date, end=end_date, freq='ME')
         
         # Generate realistic CPI trend with some volatility
         np.random.seed(42)

@@ -101,7 +101,7 @@ class OptimizationConfig(BaseModel):
     min_weight: float = 0.0  # Minimum weight per asset
     
     # Optimization solver parameters
-    solver: str = "ECOS"  # CVXPY solver
+    solver: str = "CLARABEL"  # CVXPY solver - more widely available than ECOS
     max_iters: int = 10000
     tolerance: float = 1e-8
 
