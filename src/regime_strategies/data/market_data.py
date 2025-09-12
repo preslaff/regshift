@@ -262,29 +262,49 @@ class MarketDataProvider:
         
         # Extract adjusted close prices
         if len(symbols) == 1:
-            # Single symbol case
-            if 'Adj Close' in data.columns:
-                prices = pd.DataFrame({symbols[0]: data['Adj Close']})
+            # Single symbol case - check for multi-level columns first
+            symbol = symbols[0]
+            if hasattr(data.columns, 'levels') or isinstance(data.columns, pd.MultiIndex):
+                # Multi-level columns like ('SPY', 'Close')
+                if (symbol, 'Adj Close') in data.columns:
+                    prices = pd.DataFrame({symbol: data[(symbol, 'Adj Close')]})
+                elif (symbol, 'Close') in data.columns:
+                    prices = pd.DataFrame({symbol: data[(symbol, 'Close')]})
+                else:
+                    raise ValueError(f"No Close or Adj Close data found for {symbol}")
             else:
-                prices = pd.DataFrame({symbols[0]: data['Close']})
+                # Single-level columns
+                if 'Adj Close' in data.columns:
+                    prices = pd.DataFrame({symbol: data['Adj Close']})
+                elif 'Close' in data.columns:
+                    prices = pd.DataFrame({symbol: data['Close']})
+                else:
+                    raise ValueError(f"No Close or Adj Close data found for {symbol}")
         else:
             # Multiple symbols case
             prices = pd.DataFrame()
             for symbol in symbols:
                 try:
-                    if hasattr(data.columns, 'levels') and len(data.columns.levels) > 1:
+                    if hasattr(data.columns, 'levels') or isinstance(data.columns, pd.MultiIndex):
                         # Multi-level columns
-                        if symbol in data.columns.levels[0]:
-                            if (symbol, 'Adj Close') in data.columns:
-                                prices[symbol] = data[(symbol, 'Adj Close')]
-                            elif (symbol, 'Close') in data.columns:
-                                prices[symbol] = data[(symbol, 'Close')]
+                        if (symbol, 'Adj Close') in data.columns:
+                            prices[symbol] = data[(symbol, 'Adj Close')]
+                        elif (symbol, 'Close') in data.columns:
+                            prices[symbol] = data[(symbol, 'Close')]
+                        else:
+                            self.logger.warning(f"No price data found for {symbol} in multi-level columns")
                     else:
-                        # Single level columns (when downloading single symbol)
-                        if 'Adj Close' in data.columns:
+                        # Single level columns (rare case for multiple symbols)
+                        if f'{symbol}_Adj Close' in data.columns:
+                            prices[symbol] = data[f'{symbol}_Adj Close']
+                        elif f'{symbol}_Close' in data.columns:
+                            prices[symbol] = data[f'{symbol}_Close']
+                        elif 'Adj Close' in data.columns and len(symbols) == 1:
                             prices[symbol] = data['Adj Close']
-                        elif 'Close' in data.columns:
+                        elif 'Close' in data.columns and len(symbols) == 1:
                             prices[symbol] = data['Close']
+                        else:
+                            self.logger.warning(f"No price data found for {symbol} in single-level columns")
                 except Exception as e:
                     self.logger.warning(f"Could not extract data for {symbol}: {e}")
         
