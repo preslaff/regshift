@@ -92,11 +92,29 @@ async def root():
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint for monitoring."""
+    """Health check endpoint for monitoring with regime_strategies integration status."""
+    import sys
+    import os
+    from datetime import datetime
+    
+    # Check if regime_strategies module is available
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../src'))
+    
+    regime_strategies_status = "available"
+    try:
+        from regime_strategies.main import RegimeStrategyApp
+        # Try to initialize
+        app_test = RegimeStrategyApp()
+        regime_strategies_status = "available"
+    except Exception as e:
+        regime_strategies_status = f"unavailable: {str(e)}"
+    
     return {
         "status": "healthy",
-        "database": "connected" if database.is_connected else "disconnected",
-        "timestamp": str(pd.Timestamp.now())
+        "database": "connected" if database.is_connected else "disconnected", 
+        "regime_strategies": regime_strategies_status,
+        "version": "1.0.0",
+        "timestamp": datetime.utcnow().isoformat()
     }
 
 

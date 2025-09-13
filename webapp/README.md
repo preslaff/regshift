@@ -6,13 +6,21 @@ A comprehensive web application for Dynamic Investment Strategies with Market Re
 
 ### Backend (FastAPI)
 - **Authentication & Authorization**: JWT-based authentication with refresh tokens
-- **Portfolio Management**: Create, optimize, and manage investment portfolios
-- **Market Regime Analysis**: Identify and forecast market regimes using multiple methods
-- **Backtesting Engine**: Comprehensive strategy backtesting with multi-horizon analysis
+- **Portfolio Management**: Create, optimize, and manage investment portfolios using actual regime_strategies algorithms
+- **Market Regime Analysis**: Identify and forecast market regimes using Investment Clock, K-Means, and HMM methods
+- **Backtesting Engine**: Comprehensive strategy backtesting with multi-horizon analysis from regime_strategies module
 - **Scenario Analysis**: Monte Carlo simulations, stress testing, and historical replays
-- **Market Data Integration**: Real-time and historical market data with FRED API
+- **Market Data Integration**: Real-time and historical market data with FRED API integration
 - **Analytics & Reporting**: Performance attribution, risk analysis, and custom reports
 - **User Management**: User profiles, preferences, and activity tracking
+
+### Integration with Core Financial Engine
+The webapp backend seamlessly integrates with the `src/regime_strategies/` Python module:
+- **Portfolio Optimization**: Uses actual CVX and PyPortfolioOpt implementations
+- **Regime Identification**: Leverages real Investment Clock, K-Means, and HMM algorithms
+- **Backtesting**: Utilizes the complete backtesting engine with regime-aware strategies
+- **Performance Evaluation**: Uses actual financial metrics and risk calculations
+- **Economic Data**: Integrates with FRED API for authentic economic indicators
 
 ### Frontend (Svelte)
 - **Modern UI/UX**: Responsive design with Tailwind CSS
